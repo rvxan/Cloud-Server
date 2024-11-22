@@ -17,6 +17,11 @@ BUFFER_SIZE = 1024
 #immediate todo:
 #before sending file, send preliminary info to server: what kind of operation to perform, location of file, maybe buffer size
 
+#initial message format:
+#integer representing type of request
+#integer representing size of next message
+#data to be processed by server
+
 
 def setup_connection():
     #Will a Socket Stream implement a "sliding window" of packets, or does it have to be a datagram with explicit management on server side python
@@ -32,9 +37,9 @@ def setup_connection():
                 client_tcp.send(data)
                 print("Sent file")
 
-                data = client_tcp.recv(BUFFER_SIZE)
-                print(f'The message recieved from the server: {data.decode("utf-8")}')
-        yield print(f'The message recieved from the server: {data.decode("utf-8")}')
+                #data = client_tcp.recv(BUFFER_SIZE)
+                #print(f'The message recieved from the server: {data.decode("utf-8")}')
+        yield
 
 
 if __name__ == '__main__':

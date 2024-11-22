@@ -35,7 +35,7 @@ with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as server_tcp:
                     print('Done writing')
 
                     print('[*] Data received: {}'.format(data.decode('utf-8')))
-                    connection.send('file recieved!'.encode('utf-8'))
+                    #connection.send('file recieved!'.encode('utf-8'))
                     #connection.send(''.encode('utf-8'))
             finally:
                 if file != None:
