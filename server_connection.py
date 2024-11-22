@@ -4,7 +4,7 @@ import server_functions
 
 import socket
 
-host = '10.128.0.2'
+host = '127.0.0.1'
 port = 3300
 BUFFER_SIZE = 1024
 dashes = '----> '
@@ -18,11 +18,26 @@ with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as server_tcp:
         connection, addr = server_tcp.accept()
         with connection:
             print(f'[*] Established connection from IP {addr[0]} port: {addr[1]}')
-            while True:
-                data = connection.recv(BUFFER_SIZE)
-                
-                if not data:
-                    break
-                else:
+            file = None
+            try:
+                while True:
+                    data = connection.recv(BUFFER_SIZE)
+                    if not data:
+                        break
+
+                    if file == None:
+                        file = open('Files/output.txt', 'wb')
+                    else:
+                        file = open('Files/output.txt', 'ba')
+
+                    print('Writing')
+                    file.write(data)
+                    print('Done writing')
+
                     print('[*] Data received: {}'.format(data.decode('utf-8')))
-                connection.send(dashes.encode('utf-8')+data)
+                    connection.send('file recieved!'.encode('utf-8'))
+                    #connection.send(''.encode('utf-8'))
+            finally:
+                if file != None:
+                    file.close()
+            
