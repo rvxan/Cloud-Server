@@ -24,7 +24,7 @@ class ClientRequest:
         self.type = 1
         self.message = message
 
-    # intializes a request to upload a file object 'file' with filename string 'filename' local to the current directory at the server
+    # intializes a request to upload a file at path 'file' with filename string 'filename' local to the current directory at the server
     def upload_request(self, file, filename):
         self.type = 3
         self.file = file
