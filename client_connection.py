@@ -10,6 +10,8 @@ port = 3300
 
 BUFFER_SIZE = 1024
 
+RESPONSE_HEADER_SIZE = struct.calcsize('!ill')
+
 #To Do:
 #Testing environment on laptop
 #Functions to: connect, Authenticate, Upload, Download, Delete, View Dir, Creade/Delete/Secure subfolder
@@ -38,7 +40,8 @@ class ClientRequest:
     
     #intializes a message request for a string 'message'
     def message_request(self, message):
-        self.type = 0
+        self.type = 1
+        self.message = message
 
     #intializes a request to upload a file object 'file' with filename string 'filepath' local to the current directory at the server
     def upload_request(self, file, filepath):
@@ -69,22 +72,39 @@ class ClientRequest:
     def to_byte_data(self):
         #all requests always start with a signature and request type
         #if signature is invalid, server won't send a return message
-        data = struct.pack('8sH', 'ntwrkprj', 0)
+        data = struct.pack('!8si', b'ntwrkprj', self.type)
+        if self.type == 1:
+            encodedMessage = self.message.encode('utf-8')
+            data += struct.pack('!i', len(encodedMessage))
+            data += encodedMessage
+
         return data
 
-    #see to_byte_data. This is just a wrapper to create a iostream out of the BytesObject returned by that function
-    def to_stream_data(self):
-        stream = io.BytesIO(self.to_byte_data())
-        return stream
+    def send_request(self, client_tcp):
+        send_data(self.to_byte_data(), client_tcp)
 
-#returns int, where int determines if server responded with a message string or a file
+#returns (int,long,long) , where the int determines if server responded with a message string 0 or a file 1, and the first long indicates the size of total message, and the last long indicates the buffer size
 def header_from_response(client_tcp):
-    pass
-#reads string data from the socket, must be called until an empty string is returned
+    return struct.unpack('!ill', client_tcp.recv(BUFFER_SIZE, socket.MSG_PEEK)[0:RESPONSE_HEADER_SIZE])
+
+#reads string data from the socket until socket is empty, returns a string
 def string_from_response(client_tcp):
-    pass
-#reads binary file data from the socket, must be called until return value has type None
-def file_from_response(client_tcp):
+    dataHold = b''
+    data = client_tcp.recv(BUFFER_SIZE)
+    type_no, size, buffer_size = struct.unpack('!ill', data[0:RESPONSE_HEADER_SIZE])
+    if type_no != 0:
+        raise Exception('this response doesn\'t contain a message')
+
+    dataHold += data[RESPONSE_HEADER_SIZE:]
+    size -= BUFFER_SIZE-RESPONSE_HEADER_SIZE
+    while size > 0:
+        data = client_tcp.recv(buffer_size)
+        dataHold += data
+        size -= buffer_size
+    return dataHold.decode('utf-8')
+
+#reads bytes file data from the socket into the file 'file'
+def file_from_response(client_tcp, file):
     pass
 
 #send data to the server using a provided stream and a socket
@@ -94,10 +114,13 @@ def send_stream(stream, client_tcp):
         if data == b'':
             break
         client_tcp.send(data)
-        print('Sent file')
 
        #data = client_tcp.recv(BUFFER_SIZE)
        #print(f'The message recieved from the server: {data.decode("utf-8")}')
+
+#send data to the server using a provided data and a socket
+def send_data(data, client_tcp):
+    send_stream(io.BytesIO(data), client_tcp)
 
 #change this to generally initialize a connection with the ping request
 def setup_connection():
@@ -112,16 +135,28 @@ def setup_connection():
 
         request = ClientRequest()
         request.ping_request()
-        stream = io.BytesIO(request.to_byte_data)
-        print(request.to_byte_data)
-    
+        #request.message_request('Testing Message!')
+        stream = io.BytesIO(request.to_byte_data())
+
+        if crashServer == True:
+            request.type = -1
+        print(request.to_byte_data())
+        request.send_request(client_tcp)
+
+        type_no, size, buffer_size = header_from_response(client_tcp)
+        message = string_from_response(client_tcp)
+        print(type_no)
+        print(message)
 
     yield
 
+crashServer = False
 
 if __name__ == '__main__':
     while True:
         message = input('enter a message or q for quit: ')
         if message == 'q':
            quit()
+        if message == 'p':
+           crashServer = True
         next(setup_connection())
