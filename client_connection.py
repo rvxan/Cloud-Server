@@ -29,68 +29,85 @@ RESPONSE_HEADER_SIZE = struct.calcsize('!il')
 #integer representing size of next message
 #data to be processed by server
 
-#request types 0 = ping, 1 = send message to log, 2 = unused, 3 = upload file, 4 = download file, 5 = delete file/subfolder, 6 = view dir, 7 = change dir, 8 = create subfolder 
+#request types 0 = ping, 1 = send message to log, 2 = unused, 3 = upload file, 4 = download file, 5 = delete file/subfolder, 6 = view dir, 7 = change dir, 8 = create subfolder, 9 = delete subfolder
 
-# class to setup and organize data to be sent to the server in a single pass
+#class to setup and organize data to be sent to the server in a single pass
 class ClientRequest:
     def __init__(self):
         self.ping_request()
 
-    # initializes a ping for this request
+    #initializes a ping for this request
     def ping_request(self):
         self.type = 0
 
-    # intializes a message request for a string 'message'
+    #intializes a message request for a string 'message'
     def message_request(self, message):
         self.type = 1
         self.message = message
 
-    # intializes a request to file at 'filepath' with string 'filename' local to the current directory at the server
+    #intializes a request to file at 'filepath' with string 'filename' local to the current directory at the server
     def upload_request(self, filepath, filename):
         self.type = 3
         self.filepath = filepath
         self.filename = filename
 
-    # initializes a request to download a file object with filename string 'filepath'
+    #initializes a request to download a file object with filename string 'filepath'
     def download_request(self, filepath):
         self.type = 4
         self.filepath = filepath
 
-    # initializes a delete request to delete a file object with filename string 'filepath'
+    #initializes a delete request to delete a file object with filename string 'filepath'
     def delete_request(self, filepath):
         self.type = 5
         self.filepath = filepath
 
-    # initalizes a dir request to obtain a string representation of the current directory at the server
+    #initalizes a dir request to obtain a string representation of the current directory at the server
     def viewdir_request(self):
         self.type = 6
 
-    # initializes a change directory request on the server using a string 'dirname'
+    #initializes a change directory request on the server using a string 'dirname'
     def changedir_request(self, dirname):
         self.type = 7
         self.dirname = dirname
 
-    # initializes a create subfolder request on the server using a string 'dirname'
+    #initializes a create subfolder request on the server using a string 'dirname'
     def createdir_request(self, dirname):
         self.type = 8
         self.dirname = dirname
 
-    # the returned data of this function depends on self.type
-    # server side will use packed number to determine how to unpack data
+    #initializes a delete subfolder request on the server using a string 'dirname'
+    def deletedir_request(self, dirname):
+        self.type = 9
+        self.dirname = dirname
+
+    #the returned data of this function depends on self.type
+    #server side will use packed number to determine how to unpack data
     def send_request(self, client_tcp):
-        # all requests always start with a signature and request type
-        # if signature is invalid, server won't send a return message
+        #all requests always start with a signature and request type
+        #if signature is invalid, server won't send a return message
 
         socket_send = SocketSend(client_tcp)
 
         socket_send.send_bytes(struct.pack('!8si', b'ntwrkprj', self.type))
-        if self.type == 1:
+        if self.type == 0:
+            pass
+        elif self.type == 1:
             socket_send.send_string(self.message)
         elif self.type == 3:
             socket_send.send_string(self.filename)
             socket_send.send_file(self.filepath)
         elif self.type == 4:
             socket_send.send_string(self.filepath)
+        elif self.type == 5:
+            socket_send.send_string(self.filepath)
+        elif self.type == 6:
+            pass
+        elif self.type == 7:
+            socket_send.send_string(self.dirname)
+        elif self.type == 8:
+            socket_send.send_string(self.dirname)
+        elif self.type == 9:
+            socket_send.send_string(self.dirname)
 
         socket_send.flush()
 
@@ -204,8 +221,14 @@ def setup_connection():
         request = ClientRequest()
         #request.ping_request()
         #request.message_request('Testing Message!')
-        #request.upload_request('TestingTextBig.txt','Files/TestingTextASCII.txt')
-        request.download_request('Files/TestingDownload.mp4')
+        #request.upload_request('TestingTextBig.txt','TestingTextASCII.txt')
+        #request.download_request('TestingDownload.mp4')
+        #request.delete_request('Subfolder/TestingTextASCII.txt')
+        #request.viewdir_request()
+        #request.changedir_request('Subfolder')
+        #request.createdir_request('Subfolder')
+        request.deletedir_request('Subfolder')
+
 
         if crashServer == True:
             request.type = -1
@@ -215,10 +238,11 @@ def setup_connection():
         
         print(type_no)
         
-        #message = string_from_response(client_tcp)
-        #print(message)
-
-        file_from_response(client_tcp, 'TestingDownload.mp4')
+        if type_no == 0:
+            message = string_from_response(client_tcp)
+            print(message)
+        elif type_no == 1:
+            file_from_response(client_tcp, 'TestingDownload.mp4')
     yield
 
 crashServer = False

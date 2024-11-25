@@ -1,11 +1,13 @@
 
 #connection management for server
 import server_functions
+
 import struct
 import io
 import os
-
 import socket
+
+import time
 
 class RequestHandler:
     pass
@@ -95,6 +97,7 @@ def handle_connection(connection):
         file = None
         try:
             while True:
+                #print("con")
                 data = connection.recv(BUFFER_SIZE)
 
                 #short circuiting
@@ -109,32 +112,63 @@ def handle_connection(connection):
                 #request types 0 = ping, 1 = send message to log, 2 = unused, 3 = upload file, 4 = download file, 5 = delete file/subfolder, 6 = view dir, 7 = change dir, 8 = create subfolder 
                 if req_type == 0: #ping
                     send_string('Ping request from client recieved!', connection)
-                    break
+
                 elif req_type == 1: #print message to console
                     size = struct.unpack('!i', data[HEADER_SIZE:HEADER_SIZE+STRUCT_INT_SIZE])[0]
                     message, offset = read_string_from_request(connection, data, HEADER_SIZE+STRUCT_INT_SIZE,size)
                     print(message)
                     send_string('Message recieved!', connection)
-                    break
+
                 elif req_type == 3: #upload file to server
                     offset = HEADER_SIZE
                     path_size = struct.unpack('!i', data[offset:offset+STRUCT_INT_SIZE])[0]
                     offset += STRUCT_INT_SIZE
                     path_name, offset = read_string_from_request(connection, data, offset, path_size)
-                    #offset += path_size
-                    print(data[offset:offset+STRUCT_INT_SIZE])
                     file_size = struct.unpack('!l', data[offset:offset+STRUCT_LONG_SIZE])[0]
                     print(file_size)
                     offset += STRUCT_LONG_SIZE
                     offset = read_file_from_request(connection, data, offset, file_size, path_name)
                     send_string('File recieved!', connection)
+
                 elif req_type == 4: #download file from server
                     size = struct.unpack('!i', data[HEADER_SIZE:HEADER_SIZE+STRUCT_INT_SIZE])[0]
                     filename, offset = read_string_from_request(connection, data, HEADER_SIZE+STRUCT_INT_SIZE,size)
                     send_file(filename, connection)
+
+                elif req_type == 5: #delete file from server
+                    size = struct.unpack('!i', data[HEADER_SIZE:HEADER_SIZE+STRUCT_INT_SIZE])[0]
+                    filename, offset = read_string_from_request(connection, data, HEADER_SIZE+STRUCT_INT_SIZE,size)
+                    os.remove(filename)
+                    send_string('File deleted!', connection)
+
+                elif req_type == 6: #view dir
+                    send_string('Current dir: ' + os.getcwd() + '!', connection)
+
+                elif req_type == 7: #change dir
+                    size = struct.unpack('!i', data[HEADER_SIZE:HEADER_SIZE+STRUCT_INT_SIZE])[0]
+                    filename, offset = read_string_from_request(connection, data, HEADER_SIZE+STRUCT_INT_SIZE,size)
+                    current_dir = os.chdir(filename)
+                    send_string('Changed Dir!', connection)
+
+                elif req_type == 8: #create subfolder
+                    size = struct.unpack('!i', data[HEADER_SIZE:HEADER_SIZE+STRUCT_INT_SIZE])[0]
+                    filename, offset = read_string_from_request(connection, data, HEADER_SIZE+STRUCT_INT_SIZE,size)
+                    os.mkdir(filename)
+                    send_string('Subfolder created', connection)
+
+                elif req_type == 9: #delete subfolder
+                    size = struct.unpack('!i', data[HEADER_SIZE:HEADER_SIZE+STRUCT_INT_SIZE])[0]
+                    filename, offset = read_string_from_request(connection, data, HEADER_SIZE+STRUCT_INT_SIZE,size)
+                    os.rmdir(filename)
+                    send_string('Subfolder deleted', connection)
+
+                elif req_type == -1:
+                    send_string('SERVER CRASHED', connection)
+                    raise Exception('server crashed!')
                 else:
                     raise Exception('invalid request type: ' + str(req_type))
 
+                #connection.shutdown(socket.SHUT_WR)
                 #if file == None:
                 #    file = open('Files/output.txt', 'wb')
                 #else:
@@ -157,6 +191,7 @@ def handle_connection(connection):
 if __name__ == '__main__':
 
     #may throw an error if an invalid or corrupted packet is sent to the server
+    os.chdir('Files')
     with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as server_tcp:
         server_tcp.bind((host,port))
         while True:
