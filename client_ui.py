@@ -81,22 +81,22 @@ while True:
                 print("File is invalid")
                 continue
 
-            request.upload_request(os.path.basename(att1))
+            request.upload_test_request(os.path.basename(att1))
             request.send_request(client_tcp)
 
-            if(string_from_response(client_tcp)) == "true":
+            if header_from_response(client_tcp)[0] == 0 and string_from_response(client_tcp) == "true":
                 while True:
                     message = input('A file of that name already exists in the current server directory'
                                     '\nWould you like to overwrite this file <Y/N>: ')
                     if message.upper() == "Y":
-                        request.upload_accept(os.open(att1, os.O_RDONLY), os.path.basename(att1))
+                        request.upload_request(os.open(att1, os.O_RDONLY), os.path.basename(att1))
                         break
                     elif message.upper() == "N":
                         break
                     else:
                         print("Please enter Y or N")
             else:
-                request.upload_accept(os.open(att1, os.O_RDONLY), os.path.basename(att1))
+                request.upload_request(os.open(att1, os.O_RDONLY), os.path.basename(att1))
         elif command.lower() == 'download':
             if att1 == "":
                 print("When using the download command, please specify a file to download")
@@ -126,17 +126,19 @@ while True:
             else:
                 print("When using the subfolder command, specify if you would like to create or delete a subfolder")
                 break
-
+        elif command.lower() == 'p':
+            request.ping_request()
+            request.type = -1
         else:
             print("Command not recognized.")
             continue
 
         request.send_request(client_tcp)
-        responseType = header_from_response(client_tcp)
+        responseType = header_from_response(client_tcp)[0]
 
-        if responseType[0] == 0:
+        if responseType == 0 or responseType == 2:
             print(string_from_response(client_tcp))
-        elif responseType[0] == 1:
+        elif responseType == 1:
             # Receiving file, store in current directory as downloaded file name
             if not os.path.exists("downloads"):
                 os.mkdir("downloads")

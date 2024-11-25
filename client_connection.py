@@ -43,12 +43,12 @@ class ClientRequest:
         self.type = 1
         self.message = message
 
-    def upload_request(self, filename):
+    def upload_test_request(self, filename):
         self.type = 2
         self.filename = filename
 
     #intializes a request to file at 'filepath' with string 'filename' local to the current directory at the server
-    def upload_accept(self, filepath, filename):
+    def upload_request(self, filepath, filename):
         self.type = 3
         self.filepath = filepath
         self.filename = filename
@@ -112,8 +112,6 @@ class ClientRequest:
             socket_send.send_string(self.dirname)
         elif self.type == 9:
             socket_send.send_string(self.dirname)
-        elif self.type == 5232353:
-            print("HAHA")
         socket_send.flush()
 
 #class to queue data sending
@@ -158,7 +156,7 @@ def string_from_response(client_tcp):
     dataHold = b''
     data = client_tcp.recv(BUFFER_SIZE)
     type_no, size = struct.unpack('!il', data[0:RESPONSE_HEADER_SIZE])
-    if type_no != 0:
+    if type_no != 0 and type_no != 2:
         raise Exception('this response doesn\'t contain a message')
 
     dataHold += data[RESPONSE_HEADER_SIZE:]
@@ -212,6 +210,44 @@ def write_file_to_data(data, filepath): #data is passed as a copy?!?!?
 def send_data(data, client_tcp):
     send_stream(io.BytesIO(data), client_tcp)
 
+
+def connection_main():
+    #TCP automatically handles resending packets+out of order packets. Robust packet management probs isn't necessary
+    
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_tcp:
+        client_tcp.connect((host, port))
+        #client_tcp.send(message.encode('utf-8'))
+        
+        #with open('TestingTextASCII.txt', 'rb') as file:
+        #    send_file(file, client_tcp)
+
+        request = ClientRequest()
+        #request.ping_request()
+        #request.message_request('Testing Message!')
+        #request.upload_request('TestingTextBig.txt','FailTest.txt')
+        #request.download_request('TestingDownload.mp4')
+        #request.delete_request('Subfolder/TestingTextASCII.txt')
+        #request.viewdir_request()
+        request.changedir_request('..')
+        #request.createdir_request('Subfolder')
+        #request.deletedir_request('Subfolder')
+
+
+        if crashServer == True:
+            request.type = -1
+        request.send_request(client_tcp)
+
+        type_no, size = header_from_response(client_tcp)
+        
+        print(type_no)
+        
+        if type_no == 0:
+            message = string_from_response(client_tcp)
+            print(message)
+        elif type_no == 1:
+            file_from_response(client_tcp, 'TestingDownload.mp4')
+    yield
+
 crashServer = False
 
 if __name__ == '__main__':
@@ -221,3 +257,4 @@ if __name__ == '__main__':
            quit()
         if message == 'p':
            crashServer = True
+        next(connection_main())
