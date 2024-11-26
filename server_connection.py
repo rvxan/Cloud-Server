@@ -18,7 +18,7 @@ BUFFER_SIZE = 1024
 
 HEADER_SIZE = struct.calcsize('!8si')
 STRUCT_INT_SIZE = struct.calcsize('!i')
-STRUCT_LONG_SIZE = struct.calcsize('!l') #long is same as int, should use q for long long :(
+STRUCT_LONG_SIZE = struct.calcsize('!q') #q is LONG LONG
 
 
 #send data to the client using a provided stream and a socket
@@ -35,21 +35,21 @@ def send_data(data, connection):
 #sends a message 'strMessage' to client through socket 'connection'
 def send_string(strMessage, connection):
     messageData = strMessage.encode('utf-8')
-    message = struct.pack('!il', 0, len(messageData)) + messageData
+    message = struct.pack('!iq', 0, len(messageData)) + messageData
     send_data(message, connection)
 
 #sends a message 'strMessage' to client through socket 'connection', labeled as response type 2: error
 def send_error(strMessage, connection):
     messageData = strMessage.encode('utf-8')
-    message = struct.pack('!il', 2, len(messageData)) + messageData
+    message = struct.pack('!iq', 2, len(messageData)) + messageData
     send_data(message, connection)
 
 def send_file(filepath, connection):
     with open(filepath, 'rb') as file:
         file_size = os.stat(filepath).st_size
-        message = struct.pack('!il', 1, file_size)
-        if file_size > BUFFER_SIZE - struct.calcsize('!il'):
-            message += file.read(BUFFER_SIZE - struct.calcsize('!il'))
+        message = struct.pack('!iq', 1, file_size)
+        if file_size > BUFFER_SIZE - struct.calcsize('!iq'):
+            message += file.read(BUFFER_SIZE - struct.calcsize('!iq'))
             send_data(message, connection)
             send_stream(file, connection)
         else:
@@ -77,6 +77,9 @@ def read_string_from_request(connection, data, offset, size):
             dataHold += data[0:size]
             return dataHold.decode('utf-8'), size
 
+    return dataHold.decode('utf-8'), len(data)
+    
+
 def read_file_from_request(connection, data, offset, size, filepath):
 
     with open(filepath, 'wb') as file:
@@ -97,9 +100,8 @@ def read_file_from_request(connection, data, offset, size, filepath):
             else:
                 file.write(data[0:size])
                 return size
-        
 
-    return size
+    return len(data)
 
 def handle_connection(connection):
     with connection:
@@ -153,7 +155,7 @@ def handle_connection(connection):
                         path_size = struct.unpack('!i', data[offset:offset+STRUCT_INT_SIZE])[0]
                         offset += STRUCT_INT_SIZE
                         path_name, offset = read_string_from_request(connection, data, offset, path_size)
-                        file_size = struct.unpack('!l', data[offset:offset+STRUCT_LONG_SIZE])[0]
+                        file_size = struct.unpack('!q', data[offset:offset+STRUCT_LONG_SIZE])[0]
 
                         #if file is not in allowed directory
                         if os.path.realpath(path_name).startswith(main_server_dir) == False:

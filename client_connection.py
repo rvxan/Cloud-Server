@@ -10,7 +10,7 @@ port = 3300
 
 BUFFER_SIZE = 1024
 
-RESPONSE_HEADER_SIZE = struct.calcsize('!il')
+RESPONSE_HEADER_SIZE = struct.calcsize('!iq')
 
 #To Do:
 #Testing environment on laptop
@@ -126,7 +126,7 @@ class SocketSend:
         self.send_bytes(struct.pack('!i', len(encodedMessage)))
         self.send_bytes(encodedMessage)
     def send_file(self, filepath):
-        self.send_bytes(struct.pack('!l', os.stat(filepath).st_size))
+        self.send_bytes(struct.pack('!q', os.stat(filepath).st_size))
         with open(filepath, 'rb') as file:
             while True:
                 file_data = file.read(BUFFER_SIZE)
@@ -150,13 +150,13 @@ class SocketSend:
 
 #returns (int,long) , where the int determines if server responded with a message string 0 or a file 1, and the first long indicates the size of total message
 def header_from_response(client_tcp):
-    return struct.unpack('!il', client_tcp.recv(BUFFER_SIZE, socket.MSG_PEEK)[0:RESPONSE_HEADER_SIZE])
+    return struct.unpack('!iq', client_tcp.recv(BUFFER_SIZE, socket.MSG_PEEK)[0:RESPONSE_HEADER_SIZE])
 
 #reads string data from the socket until socket is empty, returns a string
 def string_from_response(client_tcp):
     dataHold = b''
     data = client_tcp.recv(BUFFER_SIZE)
-    type_no, size = struct.unpack('!il', data[0:RESPONSE_HEADER_SIZE])
+    type_no, size = struct.unpack('!iq', data[0:RESPONSE_HEADER_SIZE])
     if type_no != 0 and type_no != 2:
         raise Exception('this response doesn\'t contain a message')
 
@@ -172,7 +172,7 @@ def string_from_response(client_tcp):
 def file_from_response(client_tcp, filepath):
     with open(filepath, 'wb') as file:
         data = client_tcp.recv(BUFFER_SIZE)
-        type_no, size = struct.unpack('!il', data[0:RESPONSE_HEADER_SIZE])
+        type_no, size = struct.unpack('!iq', data[0:RESPONSE_HEADER_SIZE])
 
         if type_no != 1:
             raise Exception('this response doesn\'t contain a file')
@@ -226,10 +226,11 @@ def connection_main():
         #request.ping_request()
         #request.message_request('Testing Message!')
         #request.upload_request('TestingTextBig.txt','FailTest.txt')
-        request.upload_request('TestingDownload.mp4','TestingDownload.mp4')
+        #request.upload_request('TestingDownload.mp4','TestingDownload.mp4')
         #request.upload_request('Lucky.png','Lucky.png')
-        #request.download_request('TestingDownload.mp4')
+        request.download_request('Lucky.png')
         #request.delete_request('Subfolder/TestingTextASCII.txt')
+        #request.delete_request('TestingDownload.mp4')
         #request.viewdir_request()
         #request.changedir_request('..')
         #request.createdir_request('Subfolder')
@@ -252,9 +253,13 @@ def connection_main():
         elif type_no == 1:
             file_from_response(client_tcp, 'TestingDownload.mp4')
 
-        request.message_request('Testing Message!')
+        #request.message_request('Testing Message!')
         #request.send_request(client_tcp)
         #string_from_response(client_tcp)
+
+        #request.upload_request('TestingDownload.mp4','TestingDownload.mp4')
+        #request.send_request(client_tcp)
+        #print(string_from_response(client_tcp))
         
     yield
 
