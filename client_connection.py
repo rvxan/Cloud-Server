@@ -3,8 +3,9 @@ import socket
 import struct
 import io
 import os
+import time
 
-host = '127.0.0.1'
+host = '34.55.36.129'
 port = 3300
 
 BUFFER_SIZE = 1024
@@ -160,11 +161,11 @@ def string_from_response(client_tcp):
         raise Exception('this response doesn\'t contain a message')
 
     dataHold += data[RESPONSE_HEADER_SIZE:]
-    size -= BUFFER_SIZE-RESPONSE_HEADER_SIZE
+    size -= len(data)-RESPONSE_HEADER_SIZE
     while size > 0:
         data = client_tcp.recv(BUFFER_SIZE)
         dataHold += data
-        size -= BUFFER_SIZE
+        size -= len(data)
     return dataHold.decode('utf-8')
 
 #reads bytes file data from the socket into the file path string 'filepath'
@@ -177,11 +178,11 @@ def file_from_response(client_tcp, filepath):
             raise Exception('this response doesn\'t contain a file')
 
         file.write(data[RESPONSE_HEADER_SIZE:])
-        size -= BUFFER_SIZE-RESPONSE_HEADER_SIZE
+        size -= len(data)-RESPONSE_HEADER_SIZE
         while size > 0:
             data = client_tcp.recv(BUFFER_SIZE)
             file.write(data)
-            size -= BUFFER_SIZE
+            size -= len(data)
 
 #send data to the server using a provided stream and a socket
 def send_stream(stream, client_tcp):
@@ -225,13 +226,17 @@ def connection_main():
         #request.ping_request()
         #request.message_request('Testing Message!')
         #request.upload_request('TestingTextBig.txt','FailTest.txt')
+        request.upload_request('TestingDownload.mp4','TestingDownload.mp4')
+        #request.upload_request('Lucky.png','Lucky.png')
         #request.download_request('TestingDownload.mp4')
         #request.delete_request('Subfolder/TestingTextASCII.txt')
         #request.viewdir_request()
-        request.changedir_request('..')
+        #request.changedir_request('..')
         #request.createdir_request('Subfolder')
         #request.deletedir_request('Subfolder')
 
+        #time.sleep(3)
+        #yield
 
         if crashServer == True:
             request.type = -1
@@ -241,11 +246,16 @@ def connection_main():
         
         print(type_no)
         
-        if type_no == 0:
+        if type_no == 0 or type_no == 2:
             message = string_from_response(client_tcp)
             print(message)
         elif type_no == 1:
             file_from_response(client_tcp, 'TestingDownload.mp4')
+
+        request.message_request('Testing Message!')
+        #request.send_request(client_tcp)
+        #string_from_response(client_tcp)
+        
     yield
 
 crashServer = False

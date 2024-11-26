@@ -12,7 +12,7 @@ import time
 class RequestHandler:
     pass
 
-host = '127.0.0.1'
+host = '10.128.0.4'
 port = 3300
 BUFFER_SIZE = 1024
 
@@ -60,39 +60,44 @@ def send_file(filepath, connection):
 def read_string_from_request(connection, data, offset, size):
     dataHold = b''
 
-    dataHold += data[offset:min(BUFFER_SIZE,size+offset)]
-    if size+offset < BUFFER_SIZE:
+    dataHold += data[offset:min(len(data),size+offset)]
+    #if data already contains entire string, reat that and just adjust offset
+    if size+offset < len(data):
         return dataHold.decode('utf-8'), size+offset
     
-    size -= BUFFER_SIZE-offset
-    while size > BUFFER_SIZE:
+    #size is remaining amount to be read
+    size -= len(data)-offset
+
+    while size > 0:
         data = connection.recv(BUFFER_SIZE)
-        dataHold += data
-        size -= BUFFER_SIZE
-    if size > 0:
-        data = connection.recv(BUFFER_SIZE)
-        dataHold += data[0:size]
-    else:
-        size = 0
-    return dataHold.decode('utf-8'), size
+        if size > len(data):
+            dataHold += data
+            size -= len(data)
+        else:
+            file.write(data[0:size])
+            return dataHold.decode('utf-8'), size
 
 def read_file_from_request(connection, data, offset, size, filepath):
 
     with open(filepath, 'wb') as file:
-        file.write(data[offset:min(BUFFER_SIZE,size+offset)])
-        if size+offset < BUFFER_SIZE:
+        file.write(data[offset:min(len(data),size+offset)])
+        
+        #If data already contains entire file, read that and just adjust offset
+        if size+offset < len(data):
             return size+offset
 
-        size -= BUFFER_SIZE-offset
+        #size is remaining amount to be read
+        size -= len(data)-offset
 
-        while size > BUFFER_SIZE:
-            file.write(connection.recv(BUFFER_SIZE))
-            size -= BUFFER_SIZE
-        if size > 0:
+        while size > 0:
             data = connection.recv(BUFFER_SIZE)
-            file.write(data[0:size])
-        else:
-            size = 0
+            if size > len(data):
+                file.write(data)
+                size -= len(data)
+            else:
+                file.write(data[0:size])
+                return size
+        
 
     return size
 
@@ -107,6 +112,7 @@ def handle_connection(connection):
                 #print("con")
                 data = connection.recv(BUFFER_SIZE)
 
+                
                 #short circuiting
                 if data == None or len(data) < 8:
                     break
@@ -158,6 +164,8 @@ def handle_connection(connection):
                         offset = read_file_from_request(connection, data, offset, file_size, path_name)
 
                         send_string('File recieved!', connection)
+                        time.sleep(3)
+
 
                     elif req_type == 4: #download file from server
                         size = struct.unpack('!i', data[HEADER_SIZE:HEADER_SIZE+STRUCT_INT_SIZE])[0]
