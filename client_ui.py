@@ -59,6 +59,7 @@ while True:
             print("Command not recognized.")
 
     while client_tcp.fileno() != -1:
+        shouldSend = 1
         request = ClientRequest()
         message = input('Enter a command, h for help, or q to disconnect: ')
         command, att1, att2 = parse_message(message, 3)
@@ -84,19 +85,23 @@ while True:
             request.upload_test_request(os.path.basename(att1))
             request.send_request(client_tcp)
 
-            if header_from_response(client_tcp)[0] == 0 and string_from_response(client_tcp) == "true":
-                while True:
-                    message = input('A file of that name already exists in the current server directory'
-                                    '\nWould you like to overwrite this file <Y/N>: ')
-                    if message.upper() == "Y":
-                        request.upload_request(os.open(att1, os.O_RDONLY), os.path.basename(att1))
-                        break
-                    elif message.upper() == "N":
-                        break
-                    else:
-                        print("Please enter Y or N")
-            else:
-                request.upload_request(os.open(att1, os.O_RDONLY), os.path.basename(att1))
+            if header_from_response(client_tcp)[0] == 0:
+                if string_from_response(client_tcp) == "true":
+                    while True:
+                        message = input('A file of that name already exists in the current server directory'
+                                        '\nWould you like to overwrite this file <Y/N>: ')
+                        if message.upper() == "Y":
+                            request.upload_request(os.open(att1, os.O_RDONLY), os.path.basename(att1))
+                            break
+                        elif message.upper() == "N":
+                            shouldSend = 0
+                            break
+                        else:
+                            print("Please enter Y or N")
+                else:
+                    request.upload_request(os.open(att1, os.O_RDONLY), os.path.basename(att1))
+            elif header_from_response(client_tcp)[0] == 2:
+                shouldSend = 0
         elif command.lower() == 'download':
             if att1 == "":
                 print("When using the download command, please specify a file to download")
@@ -131,6 +136,9 @@ while True:
             request.type = -1
         else:
             print("Command not recognized.")
+            continue
+
+        if not shouldSend:
             continue
 
         request.send_request(client_tcp)

@@ -5,6 +5,7 @@ import struct
 import io
 import os
 import socket
+import threading
 
 import time
 
@@ -76,7 +77,7 @@ def read_string_from_request(connection, data, offset, size):
     return dataHold.decode('utf-8'), size
 
 def read_file_from_request(connection, data, offset, size, filepath):
-    
+
     with open(filepath, 'wb') as file:
         file.write(data[offset:min(BUFFER_SIZE,size+offset)])
         if size+offset < BUFFER_SIZE:
@@ -97,7 +98,7 @@ def read_file_from_request(connection, data, offset, size, filepath):
 
 def handle_connection(connection):
     with connection:
-        print(f'[*] Established connection from IP {addr[0]} port: {addr[1]}')
+        # print(f'[*] Established connection from IP {addr[0]} port: {addr[1]}')
 
         main_server_dir = os.getcwd()
         file = None
@@ -150,6 +151,7 @@ def handle_connection(connection):
 
                         #if file is not in allowed directory
                         if os.path.realpath(path_name).startswith(main_server_dir) == False:
+                            print(os.path.realpath(path_name), main_server_dir)
                             raise Exception("Access not authorized in this location")
 
                         offset += STRUCT_LONG_SIZE
@@ -272,7 +274,5 @@ if __name__ == '__main__':
             server_tcp.listen(6)
             print('[*] Waiting for connection')
 
-            #whenever the client want's to make a new request, a new connection must be opened
-            #prevents problems if a user opens a connection, then forgets that it was open
             connection, addr = server_tcp.accept()
-            handle_connection(connection)
+            threading.Thread(target=handle_connection, args=(connection,)).run()
