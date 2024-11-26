@@ -1,3 +1,5 @@
+import time
+
 
 def calculate_download(start_time, end_time, file_size):
     transfer_time = end_time - start_time
@@ -7,7 +9,7 @@ def calculate_download(start_time, end_time, file_size):
         transfer_rate = 0
 
     print(f"Download rate: {transfer_rate:.2f} MB/s")
-    print(f"Transfer Time: {transfer_time}s")
+    print(f"Transfer Time: {transfer_time:.3f}s")
 
 
 def calculate_upload(start_time, end_time, file_size):
@@ -18,4 +20,9 @@ def calculate_upload(start_time, end_time, file_size):
         transfer_rate = 0
 
     print(f"Upload rate: {transfer_rate:.2f} MB/s")
-    print(f"Transfer Time: {transfer_time}s")
+    print(f"Transfer Time: {transfer_time:.3f}s")
+
+
+def calculate_latency(start_time, end_time):
+    latency = (end_time - start_time) * 1000
+    print(f"Latency: {latency}ms")
