@@ -1,6 +1,7 @@
 from client_connection import *
 import ipaddress
 import shlex
+import time
 
 client_tcp = None
 
@@ -83,7 +84,8 @@ while True:
                   "\ndelete [filepath] - Delete file located at filepath from server"
                   "\ndir - View files and subdirectories"
                   "\ncd [directory] - Change directory to [directory] in server, use '..' to ascend a directory"
-                  "\nsubfolder [create/delete] [directory] - Create/delete a subfolder named [directory]")
+                  "\nsubfolder [create/delete] [directory] - Create/delete a subfolder named [directory]"
+                  "\nping - Ping the server and print the response time")
             continue
 
         # Disconnect from server
@@ -174,6 +176,16 @@ while True:
             else:
                 print("When using the subfolder command, specify if you would like to create or delete a subfolder")
                 break
+
+        # Ping the server and print the response time
+        elif command.lower() == 'ping':
+           request.ping_request()
+           sendTime = time.time()
+           request.send_request(client_tcp)
+           string_from_response(client_tcp)
+           print(f'The server responded in {round(((time.time() - sendTime) * 1000), 2)} ms')
+           continue
+
         # Does nothing ;3c
         elif command.lower() == 'p':
             request.ping_request()
