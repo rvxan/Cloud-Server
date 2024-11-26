@@ -74,7 +74,7 @@ def read_string_from_request(connection, data, offset, size):
             dataHold += data
             size -= len(data)
         else:
-            file.write(data[0:size])
+            dataHold += data[0:size]
             return dataHold.decode('utf-8'), size
 
 def read_file_from_request(connection, data, offset, size, filepath):
