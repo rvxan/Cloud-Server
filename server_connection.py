@@ -282,4 +282,4 @@ if __name__ == '__main__':
             print('[*] Waiting for connection')
 
             connection, addr = server_tcp.accept()
-            threading.Thread(target=handle_connection, args=(connection,)).run()
+            threading.Thread(target=handle_connection, args=(connection,)).start()
