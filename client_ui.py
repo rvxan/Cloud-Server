@@ -4,7 +4,7 @@ import ipaddress
 import shlex
 import time
 
-from network_analysis import *
+from network_analysis import networkAnalysis
 
 client_tcp = None
 
@@ -187,7 +187,7 @@ while True:
             request.send_request(client_tcp)
             string_from_response(client_tcp)
             endTime = time.time()
-            calculate_latency(startTime, endTime)
+            networkAnalysis.calculate_latency(startTime, endTime)
             continue
 
         # Does nothing ;3c

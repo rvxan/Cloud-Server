@@ -8,7 +8,7 @@ import threading
 
 import time
 
-from network_analysis import *
+from network_analysis import networkAnalysis
 
 class RequestHandler:
     pass
@@ -69,7 +69,7 @@ def send_file(filepath, connection):
     end_time = time.time()
 
     file_size = os.stat(filepath).st_size
-    calculate_download(start_time, end_time, file_size)
+    networkAnalysis.calculate_download(start_time, end_time, file_size)
 
 
 # reads a string from data and a socket, where data is the first packet containing the string, offset is the non-string info of the packet, and size is the size of the string (including this packet)
@@ -117,7 +117,7 @@ def read_file_from_request(connection, data, offset, size, filepath):
                 file.write(data[0:size])
                 end_time = time.time()
                 file_size = os.stat(filepath).st_size
-                calculate_upload(start_time, end_time, file_size)
+                networkAnalysis.calculate_upload(start_time, end_time, file_size)
                 return size
 
     return len(data)
@@ -126,6 +126,7 @@ def read_file_from_request(connection, data, offset, size, filepath):
 def handle_connection(connection):
     with connection:
         # print(f'[*] Established connection from IP {addr[0]} port: {addr[1]}')
+        networkAnalysis.create_csv()
 
         main_server_dir = os.getcwd()
         file = None
