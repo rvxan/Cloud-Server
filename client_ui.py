@@ -45,7 +45,7 @@ while True:
     # If not connected, display connection input
     while not client_tcp:
         # Get user input and split into separate parts
-        message = input('Enter connect followed by an IP, port, username, and password to connect to a server, h for help, or q for quit: ')
+        message = input('Enter connect followed by an IP and port to connect to a server, h for help, or q for quit: ')
         command, host, port = parse_message(message, 3)
 
         # If connect is followed by a valid host and port, attempt connection
