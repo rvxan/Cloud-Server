@@ -17,7 +17,7 @@ class networkAnalysis:
     def create_csv():
         with open(networkAnalysis.file_name, mode='w', newline='') as file:
             writer = csv.writer(file)
-            writer.writerow(['Type', 'Rate/Latency (MB/s, ms)', 'Transfer Time (s)'])
+            writer.writerow(['Type', 'Upload/Download Rate (MB/s)', 'Transfer Time (s)'])
 
     @staticmethod
     def save_data(data):
