@@ -4,6 +4,9 @@ import os
 
 
 class networkAnalysis:
+    files_dir = os.path.join(os.getcwd(), 'Files')
+    if not os.path.exists(files_dir):
+        os.mkdir(files_dir)
     timestamp = time.strftime("%Y-%m-%d_%H-%M-%S")
     file_name = os.path.join(os.getcwd(), f"network_stats_{timestamp}.csv")
 
@@ -30,8 +33,8 @@ class networkAnalysis:
         else:
             transfer_rate = 0
 
-        print(f"Download rate: {transfer_rate:.2f} MB/s")
-        print(f"Transfer Time: {transfer_time:.3f}s")
+        print(f"Download rate: {transfer_rate:.5f} MB/s")
+        print(f"Transfer Time: {transfer_time:.5f}s")
         data = ['Download', transfer_rate, transfer_time]
         networkAnalysis.save_data(data)
 
@@ -43,15 +46,15 @@ class networkAnalysis:
         else:
             transfer_rate = 0
 
-        print(f"Upload rate: {transfer_rate:.2f} MB/s")
-        print(f"Transfer Time: {transfer_time:.3f}s")
+        print(f"Upload rate: {transfer_rate:.5f} MB/s")
+        print(f"Transfer Time: {transfer_time:.5f}s")
         data = ['Upload', transfer_rate, transfer_time]
         networkAnalysis.save_data(data)
 
     @staticmethod
     def calculate_latency(start_time, end_time):
         latency = (end_time - start_time) * 1000
-        print(f"Latency: {latency}ms")
+        print(f"Latency: {latency:.5f}ms")
         data = ['Latency', latency]
         networkAnalysis.save_data(data)
 
